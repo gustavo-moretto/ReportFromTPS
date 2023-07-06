@@ -61,17 +61,37 @@ for group in range(n_fractions_group):
 ##################################################################################
 # Extracting Beam Info (gantry, collimator, ...)
 for beam in range(n_beams):
-  # Acessing each beam to collect infos
-  beam_number = data.BeamSequence[beam].BeamNumber
-  beam_number = beam # using this to avoid mistakes on numering
-  key         = str(beam_number+1)
-  beam_name   = data.BeamSequence[beam].BeamName
+  # Selecting just treatments beams
+  # Some beams used to portal imaging are adding in this step, but remove forward
+  if data.BeamSequence[beam].TreatmentDeliveryType == 'TREATMENT':
+    beam_number = data.BeamSequence[beam].BeamNumber
+    beam_number = beam  # using this to avoid mistakes on numering
+    key         = str(beam_number + 1)
+    beam_name   = data.BeamSequence[beam].BeamName
+    machine     = machine
+    energy      = data.BeamSequence[beam].ControlPointSequence[0].NominalBeamEnergy
+    gantry      = data.BeamSequence[beam].ControlPointSequence[0].GantryAngle
+    collimator  = data.BeamSequence[beam].ControlPointSequence[0].BeamLimitingDeviceAngle
+    couch       = data.BeamSequence[beam].ControlPointSequence[0].PatientSupportAngle
+    # Some cases the Source to Surface Distance needs to add manually
+    ssd = ''
+    try:
+      ssd = round(float(data.BeamSequence[beam].ControlPointSequence[0].SourceToSurfaceDistance) / 10, 1)
+      ssd = str(f'100/{ssd}')
+    except AttributeError:
+      ssd = input(f"Input SSD for Beam {beam_name}: ")
+      ssd = str(f'100/{ssd}')
+    beams_data[key] = [beam_name, machine, energy, gantry, collimator, couch, ssd]
+  else:
+    pass
 
-  gantry      = data.BeamSequence[beam].ControlPointSequence[0].GantryAngle
-  collimator  = data.BeamSequence[beam].ControlPointSequence[0].BeamLimitingDeviceAngle
-  couch       = data.BeamSequence[beam].ControlPointSequence[0].PatientSupportAngle
-  try:
-    ssd       = round(float(data.BeamSequence[beam].ControlPointSequence[0].SourceToSurfaceDistance) / 10,1)
-  except AttributeError:
-    ssd       = input(f"Input SSD for Beam Data {beam_name, gantry, collimator, couch, ssd}: ")
-  beams_data[key] = [beam_name, gantry, collimator, couch, ssd]
+
+if __name__ == '__main__':
+  beams_data     = pd.DataFrame.from_dict(beams_data)
+  beam_mu_data   = pd.DataFrame.from_dict(beam_mu_data)
+  beam_presc     = pd.DataFrame.from_dict(beam_presc)
+  plan_data      = pd.concat([beams_data, beam_mu_data])
+  plan_data      = pd.concat([plan_data, beam_presc]).set_index([['Beam', 'Machine', 'Energy', 'Gantry', 'Collimator', 'Couch', 'SSD', 'MU', 'Phase']])
+  final_data     = plan_data.reindex(['Beam', 'Machine', 'Energy', 'Phase', 'MU', 'Gantry', 'Collimator', 'Couch', 'SSD']).T.dropna()
+  print(name, birth, id)
+  print(final_data.T)
