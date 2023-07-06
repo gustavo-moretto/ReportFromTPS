@@ -70,6 +70,10 @@ for beam in range(n_beams):
     beam_name   = data.BeamSequence[beam].BeamName
     machine     = machine
     energy      = data.BeamSequence[beam].ControlPointSequence[0].NominalBeamEnergy
+    x1          = abs(float(data.BeamSequence[beam].ControlPointSequence[0].BeamLimitingDevicePositionSequence[0].LeafJawPositions[0]) / 10)
+    x2          = float(data.BeamSequence[beam].ControlPointSequence[0].BeamLimitingDevicePositionSequence[0].LeafJawPositions[1]) / 10
+    y1          = abs(float(data.BeamSequence[beam].ControlPointSequence[0].BeamLimitingDevicePositionSequence[1].LeafJawPositions[0]) / 10)
+    y2          = float(data.BeamSequence[beam].ControlPointSequence[0].BeamLimitingDevicePositionSequence[1].LeafJawPositions[1]) / 10
     gantry      = data.BeamSequence[beam].ControlPointSequence[0].GantryAngle
     collimator  = data.BeamSequence[beam].ControlPointSequence[0].BeamLimitingDeviceAngle
     couch       = data.BeamSequence[beam].ControlPointSequence[0].PatientSupportAngle
@@ -81,7 +85,9 @@ for beam in range(n_beams):
     except AttributeError:
       ssd = input(f"Input SSD for Beam {beam_name}: ")
       ssd = str(f'100/{ssd}')
-    beams_data[key] = [beam_name, machine, energy, gantry, collimator, couch, ssd]
+    beams_data[key] = [machine, energy, beam_name,
+                       x1, x2, y1, y2,
+                       gantry, collimator, couch, ssd]
   else:
     pass
 
@@ -91,7 +97,12 @@ if __name__ == '__main__':
   beam_mu_data   = pd.DataFrame.from_dict(beam_mu_data)
   beam_presc     = pd.DataFrame.from_dict(beam_presc)
   plan_data      = pd.concat([beams_data, beam_mu_data])
-  plan_data      = pd.concat([plan_data, beam_presc]).set_index([['Beam', 'Machine', 'Energy', 'Gantry', 'Collimator', 'Couch', 'SSD', 'MU', 'Phase']])
-  final_data     = plan_data.reindex(['Beam', 'Machine', 'Energy', 'Phase', 'MU', 'Gantry', 'Collimator', 'Couch', 'SSD']).T.dropna()
+  plan_data      = pd.concat([plan_data, beam_presc]).set_index([['Machine', 'Energy', 'Beam',
+                                                                  'X1', 'X2', 'Y1', 'Y2',
+                                                                  'Gantry', 'Collimator', 'Couch', 'SSD',
+                                                                  'MU', 'Phase']])
+  final_data     = plan_data.reindex(['Machine', 'Energy', 'Beam',
+                                      'X1', 'X2', 'Y1', 'Y2', 'SSD',
+                                      'MU', 'Gantry', 'Collimator', 'Couch', 'Phase']).T.dropna()
   print(name, birth, id)
   print(final_data.T)
